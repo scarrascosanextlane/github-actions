@@ -20,7 +20,6 @@ jobs:
 
     steps:
       - name: Run job1 logic
-        id: run_step
         run: |
           echo "Running job1"
           # Cambia esto por tu lógica real
@@ -29,14 +28,14 @@ jobs:
 
       - name: Set real result
         id: set_result
+        if: always()
         run: |
-          if [[ "${{ steps.run_step.outcome }}" == "failure" ]]; then
+          if [[ "${{ job.status }}" == "failure" ]]; then
             echo "result=failure" >> $GITHUB_OUTPUT
-          elif [[ "${{ steps.run_step.outcome }}" == "cancelled" ]]; then
+          elif [[ "${{ job.status }}" == "cancelled" ]]; then
             echo "result=cancelled" >> $GITHUB_OUTPUT
           else
             echo "result=success" >> $GITHUB_OUTPUT
-          fi
 
 
   job2:
@@ -48,7 +47,6 @@ jobs:
 
     steps:
       - name: Run job2 logic
-        id: run_step
         run: |
           echo "Running job2"
           exit 1   # Simulamos fallo
@@ -56,14 +54,14 @@ jobs:
 
       - name: Set real result
         id: set_result
+        if: always()
         run: |
-          if [[ "${{ steps.run_step.outcome }}" == "failure" ]]; then
+          if [[ "${{ job.status }}" == "failure" ]]; then
             echo "result=failure" >> $GITHUB_OUTPUT
-          elif [[ "${{ steps.run_step.outcome }}" == "cancelled" ]]; then
+          elif [[ "${{ job.status }}" == "cancelled" ]]; then
             echo "result=cancelled" >> $GITHUB_OUTPUT
           else
             echo "result=success" >> $GITHUB_OUTPUT
-          fi
 
 
   job3:
