@@ -10,52 +10,75 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
+
   job1:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-    environment:
-      name: dev
+    continue-on-error: true
+    outputs:
+      real_result: ${{ steps.set_result.outputs.result }}
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - name: Run job1 logic
+        id: run_step
+        run: |
+          echo "Running job1"
+          # Cambia esto por tu lógica real
+          exit 0
+        continue-on-error: true
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Job 1
+      - name: Set real result
+        id: set_result
+        run: |
+          if [[ "${{ steps.run_step.outcome }}" == "failure" ]]; then
+            echo "result=failure" >> $GITHUB_OUTPUT
+          elif [[ "${{ steps.run_step.outcome }}" == "cancelled" ]]; then
+            echo "result=cancelled" >> $GITHUB_OUTPUT
+          else
+            echo "result=success" >> $GITHUB_OUTPUT
+          fi
+
+
   job2:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-    environment:
-      name: qa
+    continue-on-error: true
+    outputs:
+      real_result: ${{ steps.set_result.outputs.result }}
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - name: Run job2 logic
+        id: run_step
+        run: |
+          echo "Running job2"
+          exit 1   # Simulamos fallo
+        continue-on-error: true
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo job 2
-      - name: Controlled fail
-        run: exit 1
+      - name: Set real result
+        id: set_result
+        run: |
+          if [[ "${{ steps.run_step.outcome }}" == "failure" ]]; then
+            echo "result=failure" >> $GITHUB_OUTPUT
+          elif [[ "${{ steps.run_step.outcome }}" == "cancelled" ]]; then
+            echo "result=cancelled" >> $GITHUB_OUTPUT
+          else
+            echo "result=success" >> $GITHUB_OUTPUT
+          fi
+
 
   job3:
     runs-on: ubuntu-latest
     if: always()
     needs: [job1, job2]
-  
+
     steps:
-      - name: Evaluate results
+      - name: Evaluate final result
         run: |
-          echo "job1: ${{ needs.job1.result }}"
-          echo "job2: ${{ needs.job2.result }}"
-  
-          if [[ "${{ needs.job1.result }}" == "failure" && "${{ needs.job2.result }}" == "failure" ]]; then
-            echo "Ambos jobs fallaron → pipeline FAIL"
+          echo "job1 real: ${{ needs.job1.outputs.real_result }}"
+          echo "job2 real: ${{ needs.job2.outputs.real_result }}"
+
+          if [[ "${{ needs.job1.outputs.real_result }}" == "failure" && \
+                "${{ needs.job2.outputs.real_result }}" == "failure" ]]; then
+            echo "Both failed → PIPELINE FAIL"
             exit 1
-          else
-            echo "Al menos uno tuvo success → pipeline SUCCESS"
           fi
+
+          echo "At least one succeeded or was cancelled → PIPELINE SUCCESS"
