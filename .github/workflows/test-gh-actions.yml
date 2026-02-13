@@ -35,6 +35,8 @@ jobs:
       # Runs a single command using the runners shell
       - name: Run a one-line script
         run: echo job 2
+      - name: Controlled fail
+        run: exit 1
 
   job3:
     # The type of runner that the job will run on
