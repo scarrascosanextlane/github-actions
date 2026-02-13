@@ -72,15 +72,25 @@ jobs:
     needs: [job1, job2]
 
     steps:
-      - name: Evaluate results
+      - name: Evaluate final result
         run: |
-          echo "job1 result: ${{ needs.job1.result }}"
-          echo "job2 result: ${{ needs.job2.result }}"
+          JOB1="${{ needs.job1.outputs.real_result }}"
+          JOB2="${{ needs.job2.outputs.real_result }}"
 
-          if [[ "${{ needs.job1.result }}" == "failure" || \
-                "${{ needs.job2.result }}" == "failure" ]]; then
-            echo "At least one job failed → PIPELINE FAIL"
+          echo "job1 raw: '$JOB1'"
+          echo "job2 raw: '$JOB2'"
+
+          # Si está vacío → no aprobado → skipped lógico
+          [[ -z "$JOB1" ]] && JOB1="skipped"
+          [[ -z "$JOB2" ]] && JOB2="skipped"
+
+          echo "job1 normalized: $JOB1"
+          echo "job2 normalized: $JOB2"
+
+          # 🔴 Si cualquiera falló explícitamente → FAIL
+          if [[ "$JOB1" == "failure" || "$JOB2" == "failure" ]]; then
+            echo "At least one explicit failure → PIPELINE FAIL"
             exit 1
           fi
 
-          echo "No failures detected → PIPELINE SUCCESS"
+          echo "No explicit failures → PIPELINE SUCCESS"
