@@ -6,79 +6,32 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     environment: dev
-    outputs:
-      real_result: ${{ steps.set_result.outputs.result }}
     steps:
-      - name: Run job1 logic
+      - name: Run dev
         id: run_step
         run: |
           echo "Running job1"
           # Cambia esto por tu lógica real
-          exit 0
-        continue-on-error: true
-      
-      - name: Set real result
-        id: set_result
-        if: always()
-        run: |
-          if [[ "${{ steps.run_step.outcome }}" == "failure" ]]; then
-            echo "result=failure" >> $GITHUB_OUTPUT
-          elif [[ "${{ steps.run_step.outcome }}" == "cancelled" ]]; then
-            echo "result=cancelled" >> $GITHUB_OUTPUT
-          else
-            echo "result=success" >> $GITHUB_OUTPUT
-          fi
-
   job2:
     runs-on: ubuntu-latest
     continue-on-error: true
     environment: qa
-    outputs:
-      real_result: ${{ steps.set_result.outputs.result }}
     steps:
-      - name: Run job2 logic
+      - name: Run dev
         id: run_step
         run: |
-          echo "Running job2"
-          exit 1   # Simulamos fallo
-        continue-on-error: true
-      
-      - name: Set real result
-        id: set_result
-        if: always()
-        run: |
-          if [[ "${{ steps.run_step.outcome }}" == "failure" ]]; then
-            echo "result=failure" >> $GITHUB_OUTPUT
-          elif [[ "${{ steps.run_step.outcome }}" == "cancelled" ]]; then
-            echo "result=cancelled" >> $GITHUB_OUTPUT
-          else
-            echo "result=success" >> $GITHUB_OUTPUT
-          fi
-
+          echo "Running job1"
+          # Cambia esto por tu lógica real
   job3:
     runs-on: ubuntu-latest
-    if: always()
     needs: [job1, job2]
+    continue-on-error: true
+    environment: dev
     steps:
-      - name: Evaluate final result
+      - name: Run dev
+        id: run_step
         run: |
-          JOB1="${{ needs.job1.outputs.real_result }}"
-          JOB2="${{ needs.job2.outputs.real_result }}"
-          
-          echo "job1 raw: '$JOB1'"
-          echo "job2 raw: '$JOB2'"
-          
-          # Si está vacío → no aprobado → skipped lógico
-          [[ -z "$JOB1" ]] && JOB1="skipped"
-          [[ -z "$JOB2" ]] && JOB2="skipped"
-          
-          echo "job1 normalized: $JOB1"
-          echo "job2 normalized: $JOB2"
-          
-          # 🔴 Si cualquiera falló explícitamente → FAIL
-          if [[ "$JOB1" == "failure" || "$JOB2" == "failure" ]]; then
-            echo "At least one explicit failure → PIPELINE FAIL"
-            exit 1
-          fi
-          
-          echo "No explicit failures → PIPELINE SUCCESS"
+          echo "Running job1"
+          # Cambia esto por tu lógica real
+
+  
