@@ -1,7 +1,8 @@
 name: Deploy (demo)
 
-# Entry point. One matrix entry per project; each entry runs its own dev -> qa chain
-# (deploy-project.yml). A failing project only skips its own QA.
+# Entry point. One pair of top-level jobs per project, dev -> qa, so the run graph shows the
+# development legs in the left column and each QA leg to the right of its own project.
+# A failing dev leg only skips the QA leg it points to.
 on:
   push:
     branches: [main]
@@ -22,22 +23,44 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    name: Deploy ${{ matrix.project.name }}
-    strategy:
-      fail-fast: false
-      matrix:
-        project:
-          - name: cvc
-            dev_family: svc-cvc-dev
-            qa_family: svc-cvc-qa
-          - name: uac
-            dev_family: svc-uac-dev
-            qa_family: svc-uac-qa
-    uses: ./.github/workflows/deploy-project.yml
+  # ---- cvc ----
+  dev-cvc:
+    name: dev · cvc
+    uses: ./.github/workflows/deploy.yml
     with:
-      project: ${{ matrix.project.name }}
-      dev_family: ${{ matrix.project.dev_family }}
-      qa_family: ${{ matrix.project.qa_family }}
+      stage: dev
+      project: cvc
+      family: svc-cvc-dev
       version: ${{ inputs.version }}
-      fail_dev: ${{ inputs.fail_dev_of == matrix.project.name }}
+      fail: ${{ inputs.fail_dev_of == 'cvc' }}
+
+  qa-cvc:
+    name: qa · cvc
+    needs: dev-cvc
+    uses: ./.github/workflows/deploy.yml
+    with:
+      stage: qa
+      project: cvc
+      family: svc-cvc-qa
+      version: ${{ inputs.version }}
+
+  # ---- uac ----
+  dev-uac:
+    name: dev · uac
+    uses: ./.github/workflows/deploy.yml
+    with:
+      stage: dev
+      project: uac
+      family: svc-uac-dev
+      version: ${{ inputs.version }}
+      fail: ${{ inputs.fail_dev_of == 'uac' }}
+
+  qa-uac:
+    name: qa · uac
+    needs: dev-uac
+    uses: ./.github/workflows/deploy.yml
+    with:
+      stage: qa
+      project: uac
+      family: svc-uac-qa
+      version: ${{ inputs.version }}
