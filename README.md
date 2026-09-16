@@ -4,8 +4,9 @@ Simplified copy of the deployment mechanism of `cloud-cvc-unleash-web`. Nothing 
 every step echoes.
 
 ```
-ci.yml         one pair of jobs per project: dev-<p> -> qa-<p> (needs), no matrix
-  -> deploy.yml   the "steps": bound to environment <stage>-<project>, reads vars.TARGET
+ci.yml                 one matrix job, one entry per project (cvc, uac)
+  -> deploy-project.yml   development, then qa (needs: development), per project
+       -> deploy.yml         the "steps": bound to environment <stage>-<project>, reads vars.TARGET
 ```
 
 ## Setup
@@ -24,13 +25,13 @@ string and the Render step prints `<missing: ...>`.
 
 ## Try it
 
-- **Happy path:** run "Deploy (demo)" from the Actions tab with no inputs. The graph shows the
-  dev legs in the left column and the QA legs in the right one, each linked to its own project:
-  `dev · cvc -> qa · cvc` and `dev · uac -> qa · uac`.
-- **Failure isolation:** run it with `fail_dev_of = cvc`. `dev · cvc` fails, `qa · cvc` is
-  skipped, and the `uac` pair runs untouched.
-
-Registering a project means copying one dev/qa job pair in `ci.yml` and creating its two
-environments. The trade-off against a matrix is that the graph shows every leg as its own node
-with its own edge, at the cost of one block per project.
+- **Happy path:** run "Deploy (demo)" from the Actions tab with no inputs. The graph shows
+  `Deploy cvc` and `Deploy uac`; each expands into `development -> QA`.
+- **Failure isolation:** run it with `fail_dev_of = cvc`. `Deploy cvc / development` fails,
+  `Deploy cvc / QA` is skipped, and `Deploy uac` runs both stages untouched.
 - **Version pin:** set `version` to any string; it is echoed by every leg.
+- **Project without a stage:** `uac` has no `qa_family` in the matrix, so `Deploy uac / QA` is
+  skipped while `Deploy uac / development` is green. Add `qa_family: svc-uac-qa` to enable it.
+
+Registering a project is one matrix entry in `ci.yml` (`name`, `dev_family`, `qa_family`) plus
+its two environments.
