@@ -1,0 +1,64 @@
+name: Deploy to stage
+
+# The "deployment steps" for one project in one stage. Binds to the GitHub environment
+# <stage>-<project> (dev-cvc, qa-cvc, dev-uac, qa-uac) and reads ONE variable from it:
+#   vars: TARGET   (any string, e.g. the name of the thing you would deploy to)
+# Nothing is deployed; every step just echoes.
+on:
+  workflow_call:
+    inputs:
+      stage:
+        required: true
+        type: string
+      project:
+        required: true
+        type: string
+      family:
+        required: true
+        type: string
+      version:
+        required: false
+        type: string
+      fail:
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: ${{ inputs.family }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.stage }}-${{ inputs.project }}
+    env:
+      GITHUB_ENVIRONMENT: ${{ inputs.stage }}-${{ inputs.project }}
+      TARGET: ${{ vars.TARGET }}
+      FAMILY: ${{ inputs.family }}
+      VERSION: ${{ inputs.version || '1.0.0' }}
+      FAIL: ${{ inputs.fail }}
+
+    steps:
+      - name: Render
+        run: |
+          echo "Rendering ${FAMILY}.json for environment ${GITHUB_ENVIRONMENT}"
+          echo "  TARGET  = ${TARGET:-<missing: define vars.TARGET in ${GITHUB_ENVIRONMENT}>}"
+          echo "  VERSION = ${VERSION}"
+          if [ "${FAIL}" = "true" ]; then
+            echo "::error::Simulated failure requested for ${GITHUB_ENVIRONMENT}"
+            exit 1
+          fi
+
+      - name: Deploy
+        run: echo "Would deploy ${FAMILY}:${VERSION} to ${TARGET}"
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## ${GITHUB_ENVIRONMENT}"
+            echo "- Family: \`${FAMILY}\`"
+            echo "- Version: \`${VERSION}\`"
+            echo "- Target: \`${TARGET}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

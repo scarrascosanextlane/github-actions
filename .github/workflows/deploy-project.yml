@@ -1,0 +1,49 @@
+name: Deploy project
+
+# The stage chain of ONE project: development, then QA. Pure orchestration, each job calls
+# deploy.yml. Because ci.yml instantiates this once per matrix entry, "qa" depends only on
+# this project's "development" leg.
+on:
+  workflow_call:
+    inputs:
+      project:
+        required: true
+        type: string
+      dev_family:
+        required: true
+        type: string
+      qa_family:
+        required: true
+        type: string
+      version:
+        required: false
+        type: string
+      fail_dev:
+        description: 'Make the development leg fail (demo only)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  development:
+    name: development
+    uses: ./.github/workflows/deploy.yml
+    with:
+      stage: dev
+      project: ${{ inputs.project }}
+      family: ${{ inputs.dev_family }}
+      version: ${{ inputs.version }}
+      fail: ${{ inputs.fail_dev }}
+
+  qa:
+    name: QA
+    needs: development
+    uses: ./.github/workflows/deploy.yml
+    with:
+      stage: qa
+      project: ${{ inputs.project }}
+      family: ${{ inputs.qa_family }}
+      version: ${{ inputs.version }}

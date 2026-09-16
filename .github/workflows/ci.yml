@@ -1,0 +1,43 @@
+name: Deploy (demo)
+
+# Entry point. One matrix entry per project; each entry runs its own dev -> qa chain
+# (deploy-project.yml). A failing project only skips its own QA.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Fake version to "deploy"; empty uses the default in deploy.yml'
+        required: false
+      fail_dev_of:
+        description: 'Project name whose dev leg should fail, to see that only its QA is skipped (e.g. cvc)'
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy ${{ matrix.project.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - name: cvc
+            dev_family: svc-cvc-dev
+            qa_family: svc-cvc-qa
+          - name: uac
+            dev_family: svc-uac-dev
+            qa_family: svc-uac-qa
+    uses: ./.github/workflows/deploy-project.yml
+    with:
+      project: ${{ matrix.project.name }}
+      dev_family: ${{ matrix.project.dev_family }}
+      qa_family: ${{ matrix.project.qa_family }}
+      version: ${{ inputs.version }}
+      fail_dev: ${{ inputs.fail_dev_of == matrix.project.name }}
